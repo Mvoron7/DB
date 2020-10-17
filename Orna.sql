@@ -6,12 +6,12 @@
 -- Author: Danilin Aleksander
 
 -- Создаем схему
-CREATE SCHEMA IF NOT EXISTS `Orna` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `Orna` DEFAULT CHARACTER SET cp1251 ;
 
 -- Удаляем структуру
 DROP TABLE IF EXISTS `Orna`.`itemsdrop`;
 DROP TABLE IF EXISTS `Orna`.`mhealth`;
-DROP TABLE IF EXISTS `Orna`.`monsters_features`;
+DROP TABLE IF EXISTS `Orna`.`monstersfeatures`;
 DROP TABLE IF EXISTS `Orna`.`gold`;
 DROP TABLE IF EXISTS `Orna`.`features`;
 DROP TABLE IF EXISTS `Orna`.`items`;
@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS `Orna`.`Monsters` (
   `Name` VARCHAR(255) NULL DEFAULT NULL,
   `Stars` TINYINT(8) NOT NULL,
   PRIMARY KEY (`idMonster`))
-ENGINE = InnoDB;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = cp1251;
 
 CREATE TABLE IF NOT EXISTS `Orna`.`MHealth` (
   `idMonster` INT(10) UNSIGNED NOT NULL,
@@ -57,15 +58,15 @@ CREATE TABLE IF NOT EXISTS `Orna`.`Gold` (
     REFERENCES `Orna`.`Monsters` (`idMonster`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
+ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Orna`.`Items` (
   `idItem` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `Name` VARCHAR(255) NULL DEFAULT NULL,
   `Stars` TINYINT(8) NULL DEFAULT NULL,
   PRIMARY KEY (`idItem`))
-ENGINE = InnoDB;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = cp1251;
 
 CREATE TABLE IF NOT EXISTS `Orna`.`ItemsDrop` (
   `idMonster` INT(10) UNSIGNED NOT NULL,
@@ -90,20 +91,21 @@ CREATE TABLE IF NOT EXISTS `Orna`.`Features` (
   `idFeature` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `Name` VARCHAR(255) NULL DEFAULT NULL,
   PRIMARY KEY (`idFeature`))
-ENGINE = InnoDB;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = cp1251;
 
-CREATE TABLE IF NOT EXISTS `Orna`.`Monsters_Features` (
+CREATE TABLE IF NOT EXISTS `Orna`.`MonstersFeatures` (
   `idMonster` INT(10) UNSIGNED NOT NULL,
   `idFeature` INT(10) UNSIGNED NOT NULL,
   PRIMARY KEY (`idMonster`, `idFeature`),
-  INDEX `fk_Monsters_Properties_Monsters1_idx` (`idMonster` ASC),
-  INDEX `fk_Monsters_Properties_Properties1_idx` (`idFeature` ASC),
-  CONSTRAINT `fk_Monsters_Properties_Monsters1`
+  INDEX `fk_Monsters_Features_Monsters1_idx` (`idMonster` ASC),
+  INDEX `fk_Monsters_Features_Features1_idx` (`idFeature` ASC),
+  CONSTRAINT `fk_Monsters_Features_Monsters1`
     FOREIGN KEY (`idMonster`)
     REFERENCES `Orna`.`Monsters` (`idMonster`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_Monsters_Properties_Properties1`
+  CONSTRAINT `fk_Monsters_Features_Features1`
     FOREIGN KEY (`idFeature`)
     REFERENCES `Orna`.`Features` (`idFeature`)
     ON DELETE NO ACTION
@@ -114,6 +116,7 @@ ENGINE = InnoDB;
 DELIMITER $$
 USE `Orna`$$
 
+/* Здоровье выбранного монстра по уровням */
 CREATE PROCEDURE `sp_Monsters_Health` (prm_MonsterID INT)
 BEGIN
     SELECT m.Name   AS name
@@ -124,10 +127,11 @@ BEGIN
       FROM Monsters AS m
       JOIN MHealth  AS h
         ON h.idMonster = m.idMonster
-    # USING (idMonster)
-     WHERE m.idMonster = prm_MonsterID;
+     WHERE m.idMonster = prm_MonsterID
+     ORDER BY h.Level;
 END$$
 
+/* Список вещей выпадающих с монстра */
 CREATE PROCEDURE `sp_Monsters_Drops`  (prm_MonsterID INT)
 BEGIN
     SELECT m.Name                              AS Name
@@ -142,6 +146,7 @@ BEGIN
      WHERE m.idMonster = prm_MonsterID;
 END$$
 
+/* Количество золота и опыта за монстра по уровням */
 CREATE PROCEDURE `sp_Monsters_Gold`  (prm_MonsterID INT)
 BEGIN
     SELECT m.Name   AS Name
@@ -158,6 +163,7 @@ BEGIN
      ORDER BY g.Level;
 END$$
 
+/* Список монстров с которых выпадает предмет */
 CREATE PROCEDURE `sp_Items_Drops` (prm_ItemID INT)
 BEGIN
     SELECT i.Name   AS Item
@@ -172,12 +178,13 @@ BEGIN
      WHERE i.idItem = prm_ItemID;
 END$$
 
+/* Список особенностей монстров */
 CREATE PROCEDURE `sp_Monsters_Features` ()
 BEGIN
     SELECT f.Name AS Feature
          , m.Name AS Monter
       FROM Monsters AS m
-      JOIN Monsters_Properties AS mp
+      JOIN Monsters_Features AS mp
         ON mp.idMonter = m.idMonster
       JOIN Features AS f
         ON f.idFeature = mp.idFeature
@@ -256,7 +263,7 @@ VALUES
 (4, 42, 365, NULL),
 (2, 47, 402, 91);
 
-/*INSERT INTO `Orna`.`monsters_features`
+/*INSERT INTO `Orna`.`monstersfeatures`
 (`idMonster`, `idFeature`)
 VALUES
 (NULL, NULL);*/
